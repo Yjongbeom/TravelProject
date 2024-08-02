@@ -1,0 +1,9 @@
+# .gitattributes 파일
+* text=auto
+
+# 쉘 스크립트 파일은 LF를 사용
+*.sh text eol=lf
+
+# Windows 실행 파일은 CRLF를 사용
+*.bat text eol=crlf
+*.cmd text eol=crlf

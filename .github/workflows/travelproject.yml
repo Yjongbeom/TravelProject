@@ -1,0 +1,62 @@
+name: Create and publish a Docker image to Docker Hub, Deploy to Cloudtype
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  IMAGE_NAME: travelproject
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Deploy to Cloudtype
+        uses: cloudtype-github-actions/deploy@v1
+        with:
+          token: ${{ secrets.CLOUDTYPE_TOKEN }}
+          project: likelion/djangoproject
+          stage: main
+          yaml: |
+            name: travelproject
+            app: container
+            options:
+              ports: "8080"
+              image: ${{ steps.meta.outputs.tags }}
+              env:
+                - name: SECRET_KEY
+                  value: ${{ secrets.SECRET_KEY }}
+                - name: REDIS_URL
+                  value: ${{ secrets.REDIS_URL }}
+                - name: DEBUG
+                  value: ${{ secrets.DEBUG }}
+                - name: OTHER_SERVER_URL
+                  value: ${{ secrets.OTHER_SERVER_URL }}
